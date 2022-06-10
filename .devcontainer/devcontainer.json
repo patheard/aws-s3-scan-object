@@ -1,5 +1,5 @@
 {
-  "name": "aws-s3-scan-files",
+  "name": "aws-s3-scan-object",
   "image": "mcr.microsoft.com/vscode/devcontainers/base:buster",
 
   "features": {
