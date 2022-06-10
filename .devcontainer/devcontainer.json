@@ -9,6 +9,12 @@
       "version": "1.0.10",
       "tflint": "none",
       "terragrunt": "none"
+    },
+
+    "docker-from-docker": {
+      "version": "latest",
+      "moby": true,
+      "dockerDashComposeVersion": "v1"
     }
   },
 
