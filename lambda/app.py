@@ -7,9 +7,6 @@ import urllib.parse
 client_s3 = boto3.client("s3")
 client_ssm = boto3.client("ssm")
 
-scan_files_api_key = get_ssm_parameter(client_ssm, os.environ["SCAN_FILES_API_KEY_PARAMETER_NAME"])
-scan_files_url = os.environ["SCAN_FILES_URL"]
-
 def handler(event, context):
     "Lambda handler invoked when a new object is created in the S3 bucket"
 
@@ -22,6 +19,7 @@ def handler(event, context):
     s3_object = get_s3_object(client_s3, bucket, object_key)
     response = start_scan(scan_files_url, scan_files_api_key, s3_object)
     tag_s3_object(client_s3, bucket, object_key, response)  
+    print(f"Scan response {response.status_code}: {response.json()}")
 
     # Response from Scan Files API
     return {
@@ -74,3 +72,7 @@ def start_scan(scan_files_url, api_key, s3_object):
         files={"file": s3_object},
         headers=headers
     )
+
+# Initialize globals
+scan_files_api_key = get_ssm_parameter(client_ssm, os.environ["SCAN_FILES_API_KEY_PARAMETER_NAME"])
+scan_files_url = os.environ["SCAN_FILES_URL"]

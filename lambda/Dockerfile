@@ -1,45 +1,10 @@
-ARG APP_DIR="/app"
-ARG APP_VENV="/opt/venv"
+FROM public.ecr.aws/lambda/python:3.9
 
-# Build image
-FROM python:3.9-alpine as build
+# Copy function code
+COPY app.py ${LAMBDA_TASK_ROOT}
 
-ARG APP_DIR
-ARG APP_VENV
+COPY requirements.txt  .
+RUN  pip3 install -r requirements.txt --target "${LAMBDA_TASK_ROOT}"
 
-RUN apk add --no-cache \
-    autoconf \
-    automake \
-    build-base \
-    cmake \
-    g++ \
-    libexecinfo-dev \
-    libffi-dev \
-    libtool \
-    libxml2-dev \
-    libxslt-dev \
-    make
-
-RUN mkdir -p ${APP_DIR}
-WORKDIR ${APP_DIR}
-
-RUN python -m venv ${APP_VENV}
-ENV PATH="${APP_VENV}/bin:$PATH"
-
-RUN pip install awslambdaric
-COPY main.py ${APP_DIR}
-
-# Lambda image
-FROM python:3.9-alpine as lambda
-
-ARG APP_DIR
-ARG APP_VENV
-ENV PATH="${APP_VENV}/bin:$PATH"
-
-WORKDIR ${APP_DIR}
-
-COPY --from=build ${APP_DIR} ${APP_DIR}
-COPY --from=build ${APP_VENV} ${APP_VENV}
-
-ENTRYPOINT [ "python", "-m", "awslambdaric" ]
-CMD [ "main.handler" ]
+# Set the CMD to your handler (could also be done as a parameter override outside of the Dockerfile)
+CMD [ "app.handler" ]
