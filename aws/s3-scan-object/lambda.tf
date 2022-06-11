@@ -12,12 +12,6 @@ module "s3_scan_object" {
 
   reserved_concurrent_executions = 10
 
-  allow_s3_execution = true
-  bucket = {
-    id  = module.upload_bucket.s3_bucket_id
-    arn = module.upload_bucket.s3_bucket_arn
-  }
-
   environment_variables = {
     SCAN_FILES_URL                    = var.scan_files_url
     SCAN_FILES_API_KEY_PARAMETER_NAME = aws_ssm_parameter.scan_files_api_key.name
@@ -56,10 +50,12 @@ data "aws_iam_policy_document" "s3_scan_object" {
     effect = "Allow"
     actions = [
       "s3:ListBucket",
-      "s3:GetBucketTagging",
+      "s3:GetObjectTagging",
       "s3:GetObject",
       "s3:GetObjectVersion",
-      "s3:PutBucketTagging"
+      "s3:GetObjectVersionTagging",
+      "s3:PutObjectTagging",
+      "s3:PutObjectVersionTagging"
     ]
     resources = [
       module.upload_bucket.s3_bucket_arn,
