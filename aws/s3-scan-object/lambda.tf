@@ -13,8 +13,8 @@ module "s3_scan_object" {
   reserved_concurrent_executions = 10
 
   environment_variables = {
-    SCAN_FILES_URL                    = var.scan_files_url
-    SCAN_FILES_API_KEY_PARAMETER_NAME = aws_ssm_parameter.scan_files_api_key.name
+    SCAN_FILES_URL                = var.scan_files_url
+    SCAN_FILES_API_KEY_PARAM_NAME = aws_ssm_parameter.scan_files_api_key.name
   }
 
   policies = [
@@ -39,7 +39,7 @@ data "aws_iam_policy_document" "s3_scan_object" {
   statement {
     effect = "Allow"
     actions = [
-      "ssm:GetParameters"
+      "ssm:GetParameter"
     ]
     resources = [
       aws_ssm_parameter.scan_files_api_key.arn,
@@ -74,4 +74,25 @@ resource "aws_ecr_repository" "s3_scan_object" {
   image_scanning_configuration {
     scan_on_push = true
   }
+}
+
+resource "aws_ecr_lifecycle_policy" "s3_scan_object_exire_untagged" {
+  repository = aws_ecr_repository.s3_scan_object.name
+  policy = jsonencode({
+    "rules" : [
+      {
+        "rulePriority" : 1,
+        "description" : "Expire images older than 14 days",
+        "selection" : {
+          "tagStatus" : "untagged",
+          "countType" : "sinceImagePushed",
+          "countUnit" : "days",
+          "countNumber" : 14
+        },
+        "action" : {
+          "type" : "expire"
+        }
+      }
+    ]
+  })
 }
