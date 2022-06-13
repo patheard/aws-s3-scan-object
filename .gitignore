@@ -1,5 +1,7 @@
 .env
 
+**/node_modules
+
 # Local .terraform directories
 **/.terraform/*
 

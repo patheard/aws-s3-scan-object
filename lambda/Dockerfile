@@ -1,10 +1,48 @@
-FROM public.ecr.aws/lambda/python:3.9
+ARG BASE_IMAGE=node:14.19.3-alpine3.16
 
-# Copy function code
-COPY app.py ${LAMBDA_TASK_ROOT}
+# Builder to install the aws-lambda-ric
+FROM ${BASE_IMAGE} as builder
 
-COPY requirements.txt  .
-RUN  pip3 install -r requirements.txt --target "${LAMBDA_TASK_ROOT}"
+ARG APP_DIR="/app"
 
-# Set the CMD to your handler (could also be done as a parameter override outside of the Dockerfile)
-CMD [ "app.handler" ]
+RUN mkdir -p ${APP_DIR}
+WORKDIR ${APP_DIR}
+
+RUN apk add --no-cache \
+    autoconf \
+    automake \
+    build-base \
+    libtool \
+    libstdc++ \
+    libexecinfo-dev \
+    make \
+    cmake \
+    libcurl \
+    python3
+
+RUN npm install aws-lambda-ric
+
+# Lambda function code and dependencies
+FROM ${BASE_IMAGE} as lambda
+
+ARG USER="nonroot"
+ARG APP_DIR="/app"
+
+WORKDIR ${APP_DIR}
+
+COPY . ${APP_DIR}
+RUN yarn install \
+    --prod \
+    --frozen-lockfile \
+    --non-interactive
+
+COPY --from=builder ${APP_DIR} ${APP_DIR}
+
+ENTRYPOINT ["/usr/local/bin/npx", "aws-lambda-ric", "app.handler"]
+
+# Create non-root user to run the lambda
+RUN addgroup --gid 10001 --system ${USER} \
+    && adduser --uid 10000 --system --ingroup ${USER} --home /home/${USER} ${USER} \
+    && chown --recursive ${USER}:${USER} ${APP_DIR}
+
+USER ${USER}

@@ -1,40 +1,37 @@
 {
   "name": "aws-s3-scan-object",
   "image": "mcr.microsoft.com/vscode/devcontainers/base:buster",
-
   "features": {
     "aws-cli": "latest",
-
+    "node": {
+      "version": "lts",
+      "nodeGypDependencies": true
+    },
     "terraform": {
       "version": "1.0.10",
       "tflint": "none",
       "terragrunt": "none"
     },
-
     "docker-from-docker": {
       "version": "latest",
       "moby": true,
       "dockerDashComposeVersion": "v1"
     }
   },
-
   "containerEnv": {
     "SHELL": "/bin/zsh"
   },
-
   "settings": {
     "[terraform]": {
       "editor.formatOnSave": true
     }
   },
-
   "extensions": [
     "hashicorp.terraform",
     "redhat.vscode-yaml",
     "sebastianbille.iam-legend",
     "github.copilot"
   ],
-
   "remoteUser": "vscode",
   "postCreateCommand": ".devcontainer/postCreateCommand.sh"
 }
