@@ -5,7 +5,6 @@ FROM ${BASE_IMAGE} as builder
 
 ARG APP_DIR="/app"
 
-RUN mkdir -p ${APP_DIR}
 WORKDIR ${APP_DIR}
 
 RUN apk add --no-cache \
@@ -20,7 +19,16 @@ RUN apk add --no-cache \
     libcurl \
     python3
 
+COPY app.js package.json yarn.lock ${APP_DIR}
+RUN yarn install \
+    --production \
+    --frozen-lockfile \
+    --non-interactive
+
 RUN npm install aws-lambda-ric
+
+RUN yarn autoclean --init && \
+    yarn autoclean --force
 
 # Lambda function code and dependencies
 FROM ${BASE_IMAGE} as lambda
@@ -30,19 +38,13 @@ ARG APP_DIR="/app"
 
 WORKDIR ${APP_DIR}
 
-COPY . ${APP_DIR}
-RUN yarn install \
-    --prod \
-    --frozen-lockfile \
-    --non-interactive
-
 COPY --from=builder ${APP_DIR} ${APP_DIR}
 
 ENTRYPOINT ["/usr/local/bin/npx", "aws-lambda-ric", "app.handler"]
 
 # Create non-root user to run the lambda
-RUN addgroup --gid 10001 --system ${USER} \
-    && adduser --uid 10000 --system --ingroup ${USER} --home /home/${USER} ${USER} \
-    && chown --recursive ${USER}:${USER} ${APP_DIR}
+RUN addgroup --gid 10001 --system ${USER} && \
+    adduser --uid 10000 --system --ingroup ${USER} --home /home/${USER} ${USER} && \
+    chown --recursive ${USER}:${USER} ${APP_DIR}
 
 USER ${USER}
