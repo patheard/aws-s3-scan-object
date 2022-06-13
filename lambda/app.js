@@ -21,7 +21,7 @@ const ssmClient = new SSMClient({ region: REGION });
  * Performs function initialization outside of the Lambda handler so that
  * it only occurs once per cold start of the function rather than on
  * every invocation.
- * @returns {Promise<{apiKey: string}>}
+ * @returns {Promise<{apiKey: string}>} API key to use for the scan
  */
 const initConfig = async () => {  
   return (async () => {    
@@ -43,7 +43,7 @@ const configPromise = initConfig();
  * Lambda handler function.  This function is invoked when a new S3 object is
  * created in response to `s3:ObjectCreated:*` events.  It downloads the object
  * and triggers a scan for malicious content.
- * @param {Object} event Lambda invocattion event
+ * @param {Object} event Lambda invocation event
  */
 exports.handler = async(event) => {
   const config = await configPromise;
@@ -62,7 +62,7 @@ exports.handler = async(event) => {
 /**
  * Retrieves the S3 object's Bucket and key from the Lambda invocation event.
  * @param {Object} event Lambda invocation event
- * @returns Object containing S3 object bucket and key
+ * @returns {{Bucket: string, Key: string}} S3 object bucket and key
  */
  const getS3ObjectFromEvent = (event) => {
   return {
@@ -75,8 +75,8 @@ exports.handler = async(event) => {
  * Starts a scan of the S3 object using the provided URL endpoint and API key.
  * @param {String} apiEndpoint API endpoint to use for the scan 
  * @param {String} apiKey API authorization key to use for the scan
- * @param {Object<{Bucket: string, Key: string}>} s3Object S3 object to tag
- * @returns Axios response data from the scan request
+ * @param {{Bucket: string, Key: string}} s3Object S3 object to tag
+ * @returns {Response} Axios response from the scan request
  */
 const startS3ObjectScan = async (apiEndpoint, apiKey, s3Object) => {
   try {
@@ -97,7 +97,7 @@ const startS3ObjectScan = async (apiEndpoint, apiKey, s3Object) => {
 /**
  * Tags the S3 object with the provided tags.
  * @param {S3Client} s3Client AWS SDK S3 client used to tag the object
- * @param {Object<{Bucket: string, Key: string}>} s3Object S3 object to tag
+ * @param {{Bucket: string, Key: string}} s3Object S3 object to tag
  * @param {Array<{Key: string, Value: string}>} tags Array of Key/Value pairs to tag the S3 object with
  */
  const tagS3Object = async (s3Client, s3Object, tags) => {
