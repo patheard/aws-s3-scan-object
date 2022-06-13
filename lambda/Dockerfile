@@ -19,7 +19,7 @@ RUN apk add --no-cache \
     libcurl \
     python3
 
-COPY app.js package.json yarn.lock ${APP_DIR}
+COPY app.js package.json yarn.lock .yarnclean ${APP_DIR}
 RUN yarn install \
     --production \
     --frozen-lockfile \
@@ -27,8 +27,7 @@ RUN yarn install \
 
 RUN npm install aws-lambda-ric
 
-RUN yarn autoclean --init && \
-    yarn autoclean --force
+RUN yarn autoclean --force
 
 # Lambda function code and dependencies
 FROM ${BASE_IMAGE} as lambda
