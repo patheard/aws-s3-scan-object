@@ -11,12 +11,12 @@ RUN apk add --no-cache \
     autoconf \
     automake \
     build-base \
-    libtool \
-    libstdc++ \
+    libcurl \
     libexecinfo-dev \
+    libstdc++ \
+    libtool \
     make \
     cmake \
-    libcurl \
     python3
 
 COPY app.js package.json yarn.lock .yarnclean ${APP_DIR}
@@ -39,11 +39,11 @@ WORKDIR ${APP_DIR}
 
 COPY --from=builder ${APP_DIR} ${APP_DIR}
 
-ENTRYPOINT ["/usr/local/bin/npx", "aws-lambda-ric", "app.handler"]
-
 # Create non-root user to run the lambda
 RUN addgroup --gid 10001 --system ${USER} && \
     adduser --uid 10000 --system --ingroup ${USER} --home /home/${USER} ${USER} && \
     chown --recursive ${USER}:${USER} ${APP_DIR}
 
 USER ${USER}
+
+ENTRYPOINT ["/usr/local/bin/npx", "aws-lambda-ric", "app.handler"]
