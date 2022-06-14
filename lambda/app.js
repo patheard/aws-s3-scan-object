@@ -168,6 +168,7 @@ const startS3ObjectScan = async (apiEndpoint, apiKey, s3Object) => {
     }
   }
   let isSuccess = false;
+
   try {
     const command = new PutObjectTaggingCommand({...s3Object, ...tagging});
     const response = await s3Client.send(command);
