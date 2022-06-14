@@ -56,6 +56,7 @@ exports.handler = async(event) => {
   // Process all event records
   for (const record of event.Records) {
     let scanStatus = null;
+    let isObjectTagged = false;
     let eventSource = getRecordEventSource(record);
     let s3Object = getS3ObjectFromRecord(eventSource, record);
 
@@ -75,11 +76,11 @@ exports.handler = async(event) => {
 
     // Tag the S3 object if we've got a scan status
     if (scanStatus !== null) {
-      await tagS3Object(s3Client, s3Object, [{ Key: "scan_status", Value: scanStatus }]);
+      isTagged = await tagS3Object(s3Client, s3Object, [{ Key: "scan_status", Value: scanStatus }]);
     }
 
-    // Track if there were any errors with this record
-    if (scanStatus === null || scanStatus === SCAN_FAILED_TO_START) {
+    // Track if there were any errors processing this record
+    if (scanStatus === SCAN_FAILED_TO_START || isObjectTagged === false) {
       errorCount++;
     }
   }
@@ -166,10 +167,14 @@ const startS3ObjectScan = async (apiEndpoint, apiKey, s3Object) => {
       "TagSet": tags
     }
   }
+  let isSuccess = false;
   try {
     const command = new PutObjectTaggingCommand({...s3Object, ...tagging});
-    await s3Client.send(command);
+    const response = await s3Client.send(command);
+    isSuccess = response.VersionId !== undefined;
   } catch(error) {
     console.log(`ERROR: failed to tag S3 object: ${error}`);
   }
+
+  return isSuccess;
 }
