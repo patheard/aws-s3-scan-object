@@ -26,7 +26,7 @@ cat > payload.json <<EOL
     },
     "Result": {
         "DataType": "String",
-        "StringValue": "CLEAN"
+        "StringValue": "POTAYTOES"
     }
 }
 EOL
