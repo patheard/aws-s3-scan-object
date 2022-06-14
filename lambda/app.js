@@ -76,7 +76,7 @@ exports.handler = async(event) => {
 
     // Tag the S3 object if we've got a scan status
     if (scanStatus !== null) {
-      isTagged = await tagS3Object(s3Client, s3Object, [{ Key: "scan_status", Value: scanStatus }]);
+      isObjectTagged = await tagS3Object(s3Client, s3Object, [{ Key: "scan_status", Value: scanStatus }]);
     }
 
     // Track if there were any errors processing this record
