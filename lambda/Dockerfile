@@ -1,6 +1,6 @@
 ARG BASE_IMAGE=node:14.19.3-alpine3.16
 
-# Builder to install the aws-lambda-ric
+# Builder to install lambda dependencies
 FROM ${BASE_IMAGE} as builder
 
 ARG APP_DIR="/app"
@@ -19,13 +19,16 @@ RUN apk add --no-cache \
     cmake \
     python3
 
+RUN npm install --prefix ${APP_DIR}/tmp aws-lambda-ric
+
 COPY app.js package.json yarn.lock .yarnclean ${APP_DIR}
 RUN yarn install \
     --production \
     --frozen-lockfile \
     --non-interactive
 
-RUN npm install aws-lambda-ric
+RUN cp -a ${APP_DIR}/tmp/node_modules/. ${APP_DIR}/node_modules/ && \
+    rm -rf ${APP_DIR}/tmp
 
 RUN yarn autoclean --force
 
