@@ -87,7 +87,7 @@ exports.handler = async(event) => {
 
   return {
     "status": errorCount > 0 ? 422 : 200,
-    "body": `"Event records processesed": ${event.Records.length}, "Errors": ${errorCount}`
+    "body": `Event records processesed: ${event.Records.length}, Errors: ${errorCount}`
   }
 }
 
@@ -178,4 +178,13 @@ const startS3ObjectScan = async (apiEndpoint, apiKey, s3Object) => {
   }
 
   return isSuccess;
+}
+
+// Helpers for testing
+exports.helpers = {
+  getRecordEventSource,
+  getS3ObjectFromRecord,
+  initConfig,
+  startS3ObjectScan,
+  tagS3Object,
 }
