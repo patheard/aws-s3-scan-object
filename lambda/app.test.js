@@ -21,6 +21,15 @@ const {
 } = helpers;
 
 jest.mock("axios");
+global.console = {
+  ...console,
+  log: jest.fn(),
+};
+
+const TEST_TIME = new Date(1978, 3, 30).getTime();
+beforeAll(() => {
+  jest.useFakeTimers().setSystemTime(TEST_TIME);
+});
 
 beforeEach(() => {
   jest.resetAllMocks();
@@ -68,7 +77,11 @@ describe("handler", () => {
         Bucket: "foo",
         Key: "bar",
         Tagging: {
-          TagSet: [{ Key: "scan_status", Value: "IN_PROGRESS" }],
+          TagSet: [
+            { Key: "av-scanner", Value: "clamav" },
+            { Key: "av-status", Value: "IN_PROGRESS" },
+            { Key: "av-timestamp", Value: TEST_TIME },
+          ],
         },
       }
     );
@@ -79,7 +92,11 @@ describe("handler", () => {
         Bucket: "bam",
         Key: "baz",
         Tagging: {
-          TagSet: [{ Key: "scan_status", Value: "SPIFY" }],
+          TagSet: [
+            { Key: "av-scanner", Value: "clamav" },
+            { Key: "av-status", Value: "SPIFY" },
+            { Key: "av-timestamp", Value: TEST_TIME },
+          ],
         },
       }
     );
@@ -114,7 +131,11 @@ describe("handler", () => {
         Bucket: "foo",
         Key: "bar",
         Tagging: {
-          TagSet: [{ Key: "scan_status", Value: "FAILED_TO_START" }],
+          TagSet: [
+            { Key: "av-scanner", Value: "clamav" },
+            { Key: "av-status", Value: "FAILED_TO_START" },
+            { Key: "av-timestamp", Value: TEST_TIME },
+          ],
         },
       }
     );
