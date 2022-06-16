@@ -23,7 +23,7 @@ const {
 jest.mock("axios");
 global.console = {
   ...console,
-  log: jest.fn(),
+  error: jest.fn(),
 };
 
 const TEST_TIME = new Date(1978, 3, 30).getTime();

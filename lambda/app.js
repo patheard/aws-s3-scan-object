@@ -11,6 +11,9 @@ const { S3Client, PutObjectTaggingCommand } = require("@aws-sdk/client-s3");
 const { SSMClient, GetParameterCommand } = require("@aws-sdk/client-ssm");
 
 const REGION = process.env.REGION;
+const ENDPOINT_URL = process.env.AWS_SAM_LOCAL
+  ? "http://host.docker.internal:3001"
+  : undefined;
 const SCAN_FILES_URL = process.env.SCAN_FILES_URL;
 const SCAN_FILES_API_KEY_PARAM_NAME = process.env.SCAN_FILES_API_KEY_PARAM_NAME;
 const SCAN_IN_PROGRESS = "IN_PROGRESS";
@@ -18,8 +21,8 @@ const SCAN_FAILED_TO_START = "FAILED_TO_START";
 const EVENT_S3 = "aws:s3";
 const EVENT_SNS = "aws:sns";
 
-const s3Client = new S3Client({ region: REGION });
-const ssmClient = new SSMClient({ region: REGION });
+const s3Client = new S3Client({ region: REGION, endpoint: ENDPOINT_URL });
+const ssmClient = new SSMClient({ region: REGION, endpoint: ENDPOINT_URL });
 
 /**
  * Performs function initialization outside of the Lambda handler so that
@@ -37,10 +40,10 @@ const initConfig = async () => {
       const response = await ssmClient.send(command);
       return { apiKey: response.Parameter.Value };
     } catch (error) {
-      console.log(
+      console.error(
         `ERROR: Unable to get '${SCAN_FILES_API_KEY_PARAM_NAME}' SSM parameter: ${error}`
       );
-      return null;
+      throw error;
     }
   })();
 };
@@ -82,7 +85,9 @@ exports.handler = async (event) => {
 
       // Unknown event source
     } else {
-      console.log(`ERROR: unsupported event source: ${JSON.stringify(record)}`);
+      console.error(
+        `ERROR: unsupported event source: ${JSON.stringify(record)}`
+      );
     }
 
     // Tag the S3 object if we've got a scan status
@@ -164,7 +169,7 @@ const startS3ObjectScan = async (apiEndpoint, apiKey, s3Object) => {
     });
     return response;
   } catch (error) {
-    console.log(
+    console.error(
       `ERROR: failed to start scan for ${s3Object}: ${error.response}`
     );
     return error.response;
@@ -190,7 +195,7 @@ const tagS3Object = async (s3Client, s3Object, tags) => {
     const response = await s3Client.send(command);
     isSuccess = response.VersionId !== undefined;
   } catch (error) {
-    console.log(`ERROR: failed to tag S3 object: ${error}`);
+    console.error(`ERROR: failed to tag S3 object: ${error}`);
   }
 
   return isSuccess;
