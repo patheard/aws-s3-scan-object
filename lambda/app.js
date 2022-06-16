@@ -29,13 +29,17 @@ const ssmClient = new SSMClient({ region: REGION });
  */
 const initConfig = async () => {
   return (async () => {
-    console.log(`Loading SSM parameter '${SCAN_FILES_API_KEY_PARAM_NAME}'`);
-    const command = new GetParameterCommand({
-      Name: SCAN_FILES_API_KEY_PARAM_NAME,
-      WithDecryption: true,
-    });
-    const response = await ssmClient.send(command);
-    return { apiKey: response.Parameter.Value };
+    try {
+      const command = new GetParameterCommand({
+        Name: SCAN_FILES_API_KEY_PARAM_NAME,
+        WithDecryption: true,
+      });
+      const response = await ssmClient.send(command);
+      return { apiKey: response.Parameter.Value };
+    } catch (error) {
+      console.log(`Unable to get '${SCAN_FILES_API_KEY_PARAM_NAME}' SSM parameter: ${error}`);
+      return null;
+    }
   })();
 };
 
@@ -82,7 +86,8 @@ exports.handler = async (event) => {
     // Tag the S3 object if we've got a scan status
     if (scanStatus !== null) {
       isObjectTagged = await tagS3Object(s3Client, s3Object, [
-        { Key: "scan_status", Value: scanStatus },
+        { Key: "av-status", Value: scanStatus },
+        { Key: "av-timestamp", Value: new Date().getTime() },
       ]);
     }
 

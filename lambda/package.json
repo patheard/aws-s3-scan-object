@@ -7,7 +7,7 @@
     "format:check": "prettier --check .",
     "format:write": "prettier --write .",
     "lint": "eslint .",
-    "test": "jest --silent"
+    "test": "jest"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.107.0",
