@@ -1,0 +1,49 @@
+name: Test lambda code
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-lambda-code:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Cache node modules
+        id: cache-npm
+        uses: actions/cache@v3
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+
+      - if: ${{ steps.cache-npm.outputs.cache-hit == 'false' }}
+        name: List the state of node modules
+        continue-on-error: true
+        working-directory: lambda
+        run: yarn list
+
+      - name: Install dependencies
+        working-directory: lambda
+        run: yarn install
+
+      - name: Format check
+        working-directory: lambda
+        run: yarn run format:check
+
+      - name: Lint
+        working-directory: lambda
+        run: yarn run lint
+
+      - name: Unit tests
+        working-directory: lambda
+        run: yarn run test
