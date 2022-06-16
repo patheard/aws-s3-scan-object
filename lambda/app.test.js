@@ -224,12 +224,17 @@ describe("getS3ObjectFromRecord", () => {
 
 describe("initConfig", () => {
   test("retrieves the config value", async () => {
-    mockSSMClient.on(GetParameterCommand).resolves({
+    mockSSMClient.on(GetParameterCommand).resolvesOnce({
       Parameter: { Value: "anotherEquallySecretValue" },
     });
 
     const config = await initConfig();
     expect(config).toEqual({ apiKey: "anotherEquallySecretValue" });
+  });
+
+  test("throws an error on failure", async () => {
+    mockSSMClient.on(GetParameterCommand).rejectsOnce(new Error("nope"));
+    await expect(initConfig()).rejects.toThrow("nope");
   });
 });
 
