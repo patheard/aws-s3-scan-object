@@ -38,12 +38,12 @@ jobs:
 
       - name: Format check
         working-directory: lambda
-        run: yarn run format:check
+        run: yarn format:check
 
       - name: Lint
         working-directory: lambda
-        run: yarn run lint
+        run: yarn lint
 
       - name: Unit tests
         working-directory: lambda
-        run: yarn run test
+        run: yarn test
