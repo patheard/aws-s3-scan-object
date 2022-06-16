@@ -1,5 +1,10 @@
 {
   "extends": [
     "config:base"
+  ],
+  "ignoreDeps": [
+    "aws", 
+    "hashicorp/terraform",
+    "node 14.19.3-alpine3.16"
   ]
 }
