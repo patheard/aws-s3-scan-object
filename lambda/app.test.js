@@ -78,6 +78,7 @@ describe("handler", () => {
         Key: "bar",
         Tagging: {
           TagSet: [
+            { Key: "av-scanner", Value: "clamav" },
             { Key: "av-status", Value: "IN_PROGRESS" },
             { Key: "av-timestamp", Value: TEST_TIME },
           ],
@@ -92,6 +93,7 @@ describe("handler", () => {
         Key: "baz",
         Tagging: {
           TagSet: [
+            { Key: "av-scanner", Value: "clamav" },
             { Key: "av-status", Value: "SPIFY" },
             { Key: "av-timestamp", Value: TEST_TIME },
           ],
@@ -130,6 +132,7 @@ describe("handler", () => {
         Key: "bar",
         Tagging: {
           TagSet: [
+            { Key: "av-scanner", Value: "clamav" },
             { Key: "av-status", Value: "FAILED_TO_START" },
             { Key: "av-timestamp", Value: TEST_TIME },
           ],

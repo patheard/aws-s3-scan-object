@@ -88,6 +88,7 @@ exports.handler = async (event) => {
     // Tag the S3 object if we've got a scan status
     if (scanStatus !== null) {
       isObjectTagged = await tagS3Object(s3Client, s3Object, [
+        { Key: "av-scanner", Value: "clamav" },
         { Key: "av-status", Value: scanStatus },
         { Key: "av-timestamp", Value: new Date().getTime() },
       ]);
