@@ -37,7 +37,9 @@ const initConfig = async () => {
       const response = await ssmClient.send(command);
       return { apiKey: response.Parameter.Value };
     } catch (error) {
-      console.log(`Unable to get '${SCAN_FILES_API_KEY_PARAM_NAME}' SSM parameter: ${error}`);
+      console.log(
+        `Unable to get '${SCAN_FILES_API_KEY_PARAM_NAME}' SSM parameter: ${error}`
+      );
       return null;
     }
   })();
