@@ -6,7 +6,7 @@
  * the scan status of existing S3 objects based on an SNS message payload.
  */
 
-const axios = require('axios');
+const axios = require("axios");
 const { S3Client, PutObjectTaggingCommand } = require("@aws-sdk/client-s3");
 const { SSMClient, GetParameterCommand } = require("@aws-sdk/client-ssm");
 
@@ -32,7 +32,7 @@ const initConfig = async () => {
     console.log(`Loading SSM parameter '${SCAN_FILES_API_KEY_PARAM_NAME}'`);
     const command = new GetParameterCommand({
       Name: SCAN_FILES_API_KEY_PARAM_NAME,
-      WithDecryption: true
+      WithDecryption: true,
     });
     const response = await ssmClient.send(command);
     return { apiKey: response.Parameter.Value };
@@ -49,7 +49,7 @@ const configPromise = initConfig();
  * is received with an update scan status.
  * @param {Object} event Lambda invocation event
  */
-exports.handler = async(event) => {
+exports.handler = async (event) => {
   const config = await configPromise;
   let errorCount = 0;
 
@@ -62,21 +62,28 @@ exports.handler = async(event) => {
 
     // Start a scan of the new S3 object
     if (eventSource === EVENT_S3) {
-      const response = await startS3ObjectScan(`${SCAN_FILES_URL}/version`, config.apiKey, s3Object);
-      scanStatus = response.status === 200 ? SCAN_IN_PROGRESS : SCAN_FAILED_TO_START;
+      const response = await startS3ObjectScan(
+        `${SCAN_FILES_URL}/version`,
+        config.apiKey,
+        s3Object
+      );
+      scanStatus =
+        response.status === 200 ? SCAN_IN_PROGRESS : SCAN_FAILED_TO_START;
 
-    // Get the scan status for an existing S3 object
+      // Get the scan status for an existing S3 object
     } else if (eventSource === EVENT_SNS) {
       scanStatus = record.Sns.MessageAttributes.Result.Value;
 
-    // Unknown event source
+      // Unknown event source
     } else {
       console.log(`ERROR: unsupported event source: ${JSON.stringify(record)}`);
     }
 
     // Tag the S3 object if we've got a scan status
     if (scanStatus !== null) {
-      isObjectTagged = await tagS3Object(s3Client, s3Object, [{ Key: "scan_status", Value: scanStatus }]);
+      isObjectTagged = await tagS3Object(s3Client, s3Object, [
+        { Key: "scan_status", Value: scanStatus },
+      ]);
     }
 
     // Track if there were any errors processing this record
@@ -86,10 +93,10 @@ exports.handler = async(event) => {
   }
 
   return {
-    "status": errorCount > 0 ? 422 : 200,
-    "body": `Event records processesed: ${event.Records.length}, Errors: ${errorCount}`
-  }
-}
+    status: errorCount > 0 ? 422 : 200,
+    body: `Event records processesed: ${event.Records.length}, Errors: ${errorCount}`,
+  };
+};
 
 /**
  * Determines the event record's source service.  This is either S3 or SNS.
@@ -106,7 +113,7 @@ const getRecordEventSource = (record) => {
   }
 
   return eventSource;
-}
+};
 
 /**
  * Retrieves the S3 object's Bucket and key from the Lambda invocation event.
@@ -114,13 +121,13 @@ const getRecordEventSource = (record) => {
  * @param {Object} record Lambda invocation event record
  * @returns {{Bucket: string, Key: string}} S3 object bucket and key
  */
- const getS3ObjectFromRecord = (eventSource, record) => {
+const getS3ObjectFromRecord = (eventSource, record) => {
   let s3Object = null;
 
   if (eventSource === EVENT_S3) {
     s3Object = {
       Bucket: record.s3.bucket.name,
-      Key: decodeURIComponent(record.s3.object.key.replace(/\+/g, ' ')),
+      Key: decodeURIComponent(record.s3.object.key.replace(/\+/g, " ")),
     };
   } else if (eventSource === EVENT_SNS) {
     s3Object = {
@@ -130,7 +137,7 @@ const getRecordEventSource = (record) => {
   }
 
   return s3Object;
-}
+};
 
 /**
  * Starts a scan of the S3 object using the provided URL endpoint and API key.
@@ -141,19 +148,20 @@ const getRecordEventSource = (record) => {
  */
 const startS3ObjectScan = async (apiEndpoint, apiKey, s3Object) => {
   try {
-    const response = await axios.get(
-      apiEndpoint, {
+    const response = await axios.get(apiEndpoint, {
       headers: {
-        "Accept": "application/json",
-        "Authorization": apiKey
-      }
+        Accept: "application/json",
+        Authorization: apiKey,
+      },
     });
     return response;
   } catch (error) {
-    console.log(`ERROR: failed to start scan: ${error.response}`);
+    console.log(
+      `ERROR: failed to start scan for ${s3Object}: ${error.response}`
+    );
     return error.response;
   }
-}
+};
 
 /**
  * Tags the S3 object with the provided tags.
@@ -161,24 +169,24 @@ const startS3ObjectScan = async (apiEndpoint, apiKey, s3Object) => {
  * @param {{Bucket: string, Key: string}} s3Object S3 object to tag
  * @param {Array<{Key: string, Value: string}>} tags Array of Key/Value pairs to tag the S3 object with
  */
- const tagS3Object = async (s3Client, s3Object, tags) => {
+const tagS3Object = async (s3Client, s3Object, tags) => {
   const tagging = {
-    "Tagging": {
-      "TagSet": tags
-    }
-  }
+    Tagging: {
+      TagSet: tags,
+    },
+  };
   let isSuccess = false;
 
   try {
-    const command = new PutObjectTaggingCommand({...s3Object, ...tagging});
+    const command = new PutObjectTaggingCommand({ ...s3Object, ...tagging });
     const response = await s3Client.send(command);
     isSuccess = response.VersionId !== undefined;
-  } catch(error) {
+  } catch (error) {
     console.log(`ERROR: failed to tag S3 object: ${error}`);
   }
 
   return isSuccess;
-}
+};
 
 // Helpers for testing
 exports.helpers = {
@@ -187,4 +195,4 @@ exports.helpers = {
   initConfig,
   startS3ObjectScan,
   tagS3Object,
-}
+};
