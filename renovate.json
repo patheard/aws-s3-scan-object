@@ -5,6 +5,6 @@
   "ignoreDeps": [
     "aws", 
     "hashicorp/terraform",
-    "node 14.19.3-alpine3.16"
+    "node:14.19.3-alpine3.16"
   ]
 }
