@@ -12,13 +12,8 @@ mockSSMClient.on(GetParameterCommand).resolves({
 });
 
 const { handler, helpers } = require("./app.js");
-const {
-  getRecordEventSource,
-  getS3ObjectFromRecord,
-  initConfig,
-  startS3ObjectScan,
-  tagS3Object,
-} = helpers;
+const { getRecordEventSource, getS3ObjectFromRecord, initConfig, startS3ObjectScan, tagS3Object } =
+  helpers;
 
 jest.mock("axios");
 global.console = {
@@ -70,36 +65,28 @@ describe("handler", () => {
 
     const response = await handler(event);
     expect(response).toEqual(expectedResponse);
-    expect(mockS3Client).toHaveReceivedNthCommandWith(
-      1,
-      PutObjectTaggingCommand,
-      {
-        Bucket: "foo",
-        Key: "bar",
-        Tagging: {
-          TagSet: [
-            { Key: "av-scanner", Value: "clamav" },
-            { Key: "av-status", Value: "IN_PROGRESS" },
-            { Key: "av-timestamp", Value: TEST_TIME },
-          ],
-        },
-      }
-    );
-    expect(mockS3Client).toHaveReceivedNthCommandWith(
-      2,
-      PutObjectTaggingCommand,
-      {
-        Bucket: "bam",
-        Key: "baz",
-        Tagging: {
-          TagSet: [
-            { Key: "av-scanner", Value: "clamav" },
-            { Key: "av-status", Value: "SPIFY" },
-            { Key: "av-timestamp", Value: TEST_TIME },
-          ],
-        },
-      }
-    );
+    expect(mockS3Client).toHaveReceivedNthCommandWith(1, PutObjectTaggingCommand, {
+      Bucket: "foo",
+      Key: "bar",
+      Tagging: {
+        TagSet: [
+          { Key: "av-scanner", Value: "clamav" },
+          { Key: "av-status", Value: "IN_PROGRESS" },
+          { Key: "av-timestamp", Value: TEST_TIME },
+        ],
+      },
+    });
+    expect(mockS3Client).toHaveReceivedNthCommandWith(2, PutObjectTaggingCommand, {
+      Bucket: "bam",
+      Key: "baz",
+      Tagging: {
+        TagSet: [
+          { Key: "av-scanner", Value: "clamav" },
+          { Key: "av-status", Value: "SPIFY" },
+          { Key: "av-timestamp", Value: TEST_TIME },
+        ],
+      },
+    });
   });
 
   test("records failed, failed to start", async () => {
@@ -124,21 +111,17 @@ describe("handler", () => {
 
     const response = await handler(event);
     expect(response).toEqual(expectedResponse);
-    expect(mockS3Client).toHaveReceivedNthCommandWith(
-      1,
-      PutObjectTaggingCommand,
-      {
-        Bucket: "foo",
-        Key: "bar",
-        Tagging: {
-          TagSet: [
-            { Key: "av-scanner", Value: "clamav" },
-            { Key: "av-status", Value: "FAILED_TO_START" },
-            { Key: "av-timestamp", Value: TEST_TIME },
-          ],
-        },
-      }
-    );
+    expect(mockS3Client).toHaveReceivedNthCommandWith(1, PutObjectTaggingCommand, {
+      Bucket: "foo",
+      Key: "bar",
+      Tagging: {
+        TagSet: [
+          { Key: "av-scanner", Value: "clamav" },
+          { Key: "av-status", Value: "FAILED_TO_START" },
+          { Key: "av-timestamp", Value: TEST_TIME },
+        ],
+      },
+    });
   });
 
   test("records failed, invalid event source", async () => {
@@ -169,9 +152,7 @@ describe("getRecordEventSource", () => {
   });
 
   test("invalid event sources", () => {
-    expect(getRecordEventSource({ eventSource: "aws:s3:ca-central-1" })).toBe(
-      null
-    );
+    expect(getRecordEventSource({ eventSource: "aws:s3:ca-central-1" })).toBe(null);
     expect(getRecordEventSource({ EventSource: "aws:s3" })).toBe(null);
     expect(getRecordEventSource({ eventSource: "aws:sns" })).toBe(null);
     expect(getRecordEventSource({ eventSource: "pohtaytoes" })).toBe(null);
@@ -241,11 +222,10 @@ describe("initConfig", () => {
 describe("startS3ObjectScan", () => {
   test("starts a scan", async () => {
     axios.get.mockResolvedValueOnce({ status: 200 });
-    const response = await startS3ObjectScan(
-      "http://somedomain.com",
-      "someSuperSecretValue",
-      { Bucket: "foo", Key: "bar" }
-    );
+    const response = await startS3ObjectScan("http://somedomain.com", "someSuperSecretValue", {
+      Bucket: "foo",
+      Key: "bar",
+    });
     expect(response).toEqual({ status: 200 });
     expect(axios.get.mock.calls[0]).toEqual([
       "http://somedomain.com",
@@ -260,20 +240,17 @@ describe("startS3ObjectScan", () => {
 
   test("fails to start a scan", async () => {
     axios.get.mockRejectedValueOnce({ response: { status: 500 } });
-    const response = await startS3ObjectScan(
-      "http://somedomain.com",
-      "someSuperSecretValue",
-      { Bucket: "foo", Key: "bar" }
-    );
+    const response = await startS3ObjectScan("http://somedomain.com", "someSuperSecretValue", {
+      Bucket: "foo",
+      Key: "bar",
+    });
     expect(response).toEqual({ status: 500 });
   });
 });
 
 describe("tagS3Object", () => {
   test("successfully tags", async () => {
-    mockS3Client
-      .on(PutObjectTaggingCommand)
-      .resolvesOnce({ VersionId: "yeet" });
+    mockS3Client.on(PutObjectTaggingCommand).resolvesOnce({ VersionId: "yeet" });
     const input = {
       Bucket: "foo",
       Key: "bar",
@@ -281,16 +258,11 @@ describe("tagS3Object", () => {
         TagSet: [{ Key: "some-tag", Value: "some-value" }],
       },
     };
-    const response = await tagS3Object(
-      mockS3Client,
-      { Bucket: "foo", Key: "bar" },
-      [{ Key: "some-tag", Value: "some-value" }]
-    );
+    const response = await tagS3Object(mockS3Client, { Bucket: "foo", Key: "bar" }, [
+      { Key: "some-tag", Value: "some-value" },
+    ]);
     expect(response).toBe(true);
-    expect(mockS3Client).toHaveReceivedCommandWith(
-      PutObjectTaggingCommand,
-      input
-    );
+    expect(mockS3Client).toHaveReceivedCommandWith(PutObjectTaggingCommand, input);
   });
 
   test("fails to tag", async () => {

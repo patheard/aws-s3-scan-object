@@ -11,9 +11,7 @@ const { S3Client, PutObjectTaggingCommand } = require("@aws-sdk/client-s3");
 const { SSMClient, GetParameterCommand } = require("@aws-sdk/client-ssm");
 
 const REGION = process.env.REGION;
-const ENDPOINT_URL = process.env.AWS_SAM_LOCAL
-  ? "http://host.docker.internal:3001"
-  : undefined;
+const ENDPOINT_URL = process.env.AWS_SAM_LOCAL ? "http://host.docker.internal:3001" : undefined;
 const SCAN_FILES_URL = process.env.SCAN_FILES_URL;
 const SCAN_FILES_API_KEY_PARAM_NAME = process.env.SCAN_FILES_API_KEY_PARAM_NAME;
 const SCAN_IN_PROGRESS = "IN_PROGRESS";
@@ -76,8 +74,7 @@ exports.handler = async (event) => {
         config.apiKey,
         s3Object
       );
-      scanStatus =
-        response.status === 200 ? SCAN_IN_PROGRESS : SCAN_FAILED_TO_START;
+      scanStatus = response.status === 200 ? SCAN_IN_PROGRESS : SCAN_FAILED_TO_START;
 
       // Get the scan status for an existing S3 object
     } else if (eventSource === EVENT_SNS) {
@@ -85,9 +82,7 @@ exports.handler = async (event) => {
 
       // Unknown event source
     } else {
-      console.error(
-        `ERROR: unsupported event source: ${JSON.stringify(record)}`
-      );
+      console.error(`ERROR: unsupported event source: ${JSON.stringify(record)}`);
     }
 
     // Tag the S3 object if we've got a scan status
@@ -169,9 +164,7 @@ const startS3ObjectScan = async (apiEndpoint, apiKey, s3Object) => {
     });
     return response;
   } catch (error) {
-    console.error(
-      `ERROR: failed to start scan for ${s3Object}: ${error.response}`
-    );
+    console.error(`ERROR: failed to start scan for ${s3Object}: ${error.response}`);
     return error.response;
   }
 };
