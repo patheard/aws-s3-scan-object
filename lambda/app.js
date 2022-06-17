@@ -38,9 +38,7 @@ const initConfig = async () => {
       const response = await ssmClient.send(command);
       return { apiKey: response.Parameter.Value };
     } catch (error) {
-      console.error(
-        `ERROR: Unable to get '${SCAN_FILES_API_KEY_PARAM_NAME}' SSM parameter: ${error}`
-      );
+      console.error(`Unable to get '${SCAN_FILES_API_KEY_PARAM_NAME}' parameter: ${error}`);
       throw error;
     }
   })();
@@ -82,7 +80,7 @@ exports.handler = async (event) => {
 
       // Unknown event source
     } else {
-      console.error(`ERROR: unsupported event source: ${JSON.stringify(record)}`);
+      console.error(`Unsupported event source: ${JSON.stringify(record)}`);
     }
 
     // Tag the S3 object if we've got a scan status
@@ -164,7 +162,7 @@ const startS3ObjectScan = async (apiEndpoint, apiKey, s3Object) => {
     });
     return response;
   } catch (error) {
-    console.error(`ERROR: failed to start scan for ${s3Object}: ${error.response}`);
+    console.error(`Failed to start scan for ${s3Object}: ${error.response}`);
     return error.response;
   }
 };
@@ -188,7 +186,7 @@ const tagS3Object = async (s3Client, s3Object, tags) => {
     const response = await s3Client.send(command);
     isSuccess = response.VersionId !== undefined;
   } catch (error) {
-    console.error(`ERROR: failed to tag S3 object: ${error}`);
+    console.error(`Failed to tag S3 object: ${error}`);
   }
 
   return isSuccess;
