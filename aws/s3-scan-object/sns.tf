@@ -12,6 +12,48 @@ resource "aws_sns_topic_subscription" "scan_complete" {
   endpoint  = module.s3_scan_object.function_arn
 }
 
+resource "aws_sns_topic_policy" "scan_complete" {
+  arn    = aws_sns_topic.scan_complete.arn
+  policy = data.aws_iam_policy_document.scan_complete.json
+}
+
+data "aws_iam_policy_document" "scan_complete" {
+  statement {
+    sid       = "AccountOwnerFullAdmin"
+    effect    = "Allow"
+    resources = [aws_sns_topic.scan_complete.arn]
+    # SNS policy does not support "sns:*" actions wildcard
+    actions = [
+      "sns:AddPermission",
+      "sns:DeleteTopic",
+      "sns:GetTopicAttributes",
+      "sns:ListSubscriptionsByTopic",
+      "sns:Publish",
+      "sns:Receive",
+      "sns:RemovePermission",
+      "sns:SetTopicAttributes",
+      "sns:Subscribe"
+    ]
+
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${local.account_id}:root"]
+    }
+  }
+
+  statement {
+    sid       = "AllowScanFilesPublish"
+    effect    = "Allow"
+    resources = [aws_sns_topic.scan_complete.arn]
+    actions   = ["sns:Publish"]
+
+    principals {
+      type        = "AWS"
+      identifiers = [var.scan_files_role_arn]
+    }
+  }
+}
+
 #
 # KMS: SNS topic encryption keys
 # A CMK is required so we can apply a policy that allows Lambda to use it
@@ -45,11 +87,10 @@ data "aws_iam_policy_document" "sns_lambda" {
       identifiers = ["lambda.amazonaws.com"]
     }
 
-    # Publish to the SNS topic
-    # principals {
-    #   type        = "AWS"
-    #   identifiers = ["arn:aws:iam::123456789012:role/SNSScanObjectComplete"]
-    # }    
+    principals {
+      type        = "AWS"
+      identifiers = [var.scan_files_role_arn]
+    }
   }
 }
 

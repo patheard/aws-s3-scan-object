@@ -22,7 +22,8 @@ resource "aws_s3_bucket_policy" "upload_bucket" {
 
 data "aws_iam_policy_document" "upload_bucket" {
   source_policy_documents = [
-    data.aws_iam_policy_document.limit_tagging.json
+    data.aws_iam_policy_document.limit_tagging.json,
+    data.aws_iam_policy_document.scan_files_download.json
   ]
 }
 
@@ -62,6 +63,41 @@ data "aws_iam_policy_document" "limit_tagging" {
     actions = [
       "s3:PutObjectTagging",
       "s3:PutObjectVersionTagging"
+    ]
+    resources = [
+      "${module.upload_bucket.s3_bucket_arn}/*"
+    ]
+  }
+}
+
+#
+# Allow Scan Files to download objects
+#
+data "aws_iam_policy_document" "scan_files_download" {
+  statement {
+    effect = "Allow"
+    principals {
+      type        = "AWS"
+      identifiers = [var.scan_files_role_arn]
+    }
+    actions = [
+      "s3:GetBucketLocation",
+      "s3:ListBucket"
+    ]
+    resources = [
+      module.upload_bucket.s3_bucket_arn
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+    principals {
+      type        = "AWS"
+      identifiers = [var.scan_files_role_arn]
+    }
+    actions = [
+      "s3:GetObject",
+      "s3:GetObjectVersion"
     ]
     resources = [
       "${module.upload_bucket.s3_bucket_arn}/*"

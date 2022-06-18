@@ -3,8 +3,10 @@ name: Docker image build
 on:
   push:
     branches: [main]
+    paths: [lambda/**]
   pull_request:
     branches: [main]
+    paths: [lambda/**]
 
 env:
   DOCKER_BUILDKIT: 1

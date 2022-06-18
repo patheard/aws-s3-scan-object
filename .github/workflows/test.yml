@@ -3,8 +3,10 @@ name: Test lambda code
 on:
   push:
     branches: [main]
+    paths: [lambda/**]
   pull_request:
     branches: [main]
+    paths: [lambda/**]
 
 jobs:
   test-lambda-code:
