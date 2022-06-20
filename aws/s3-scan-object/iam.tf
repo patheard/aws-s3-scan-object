@@ -33,11 +33,15 @@ data "aws_iam_policy_document" "scan_files" {
     effect = "Allow"
     actions = [
       "s3:ListBucket",
+      "s3:GetBucketLocation",
       "s3:GetObject",
-      "s3:GetObjectVersion"
+      "s3:GetObjectTagging",
+      "s3:GetObjectVersion",
+      "s3:GetObjectVersionTagging"
     ]
     resources = [
-      module.upload_bucket.s3_bucket_arn
+      module.upload_bucket.s3_bucket_arn,
+      "${module.upload_bucket.s3_bucket_arn}/*"
     ]
   }
 

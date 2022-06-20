@@ -81,25 +81,15 @@ data "aws_iam_policy_document" "scan_files_download" {
       identifiers = [aws_iam_role.scan_files.arn]
     }
     actions = [
+      "s3:ListBucket",
       "s3:GetBucketLocation",
-      "s3:ListBucket"
-    ]
-    resources = [
-      module.upload_bucket.s3_bucket_arn
-    ]
-  }
-
-  statement {
-    effect = "Allow"
-    principals {
-      type        = "AWS"
-      identifiers = [aws_iam_role.scan_files.arn]
-    }
-    actions = [
       "s3:GetObject",
-      "s3:GetObjectVersion"
+      "s3:GetObjectTagging",
+      "s3:GetObjectVersion",
+      "s3:GetObjectVersionTagging"
     ]
     resources = [
+      module.upload_bucket.s3_bucket_arn,
       "${module.upload_bucket.s3_bucket_arn}/*"
     ]
   }
