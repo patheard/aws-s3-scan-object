@@ -49,7 +49,7 @@ data "aws_iam_policy_document" "scan_complete" {
 
     principals {
       type        = "AWS"
-      identifiers = [var.scan_files_role_arn]
+      identifiers = [aws_iam_role.scan_files.arn]
     }
   }
 }
@@ -89,7 +89,7 @@ data "aws_iam_policy_document" "sns_lambda" {
 
     principals {
       type        = "AWS"
-      identifiers = [var.scan_files_role_arn]
+      identifiers = [aws_iam_role.scan_files.arn]
     }
   }
 }

@@ -78,7 +78,7 @@ data "aws_iam_policy_document" "scan_files_download" {
     effect = "Allow"
     principals {
       type        = "AWS"
-      identifiers = [var.scan_files_role_arn]
+      identifiers = [aws_iam_role.scan_files.arn]
     }
     actions = [
       "s3:GetBucketLocation",
@@ -93,7 +93,7 @@ data "aws_iam_policy_document" "scan_files_download" {
     effect = "Allow"
     principals {
       type        = "AWS"
-      identifiers = [var.scan_files_role_arn]
+      identifiers = [aws_iam_role.scan_files.arn]
     }
     actions = [
       "s3:GetObject",
