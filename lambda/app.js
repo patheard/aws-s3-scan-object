@@ -10,12 +10,14 @@ const axios = require("axios");
 const { S3Client, PutObjectTaggingCommand } = require("@aws-sdk/client-s3");
 const { SSMClient, GetParameterCommand } = require("@aws-sdk/client-ssm");
 
+const AWS_ACCOUNT_ID = process.env.AWS_ACCOUNT_ID;
 const REGION = process.env.REGION;
 const ENDPOINT_URL = process.env.AWS_SAM_LOCAL ? "http://host.docker.internal:3001" : undefined;
 const SCAN_FILES_URL = process.env.SCAN_FILES_URL;
 const SCAN_FILES_API_KEY_PARAM_NAME = process.env.SCAN_FILES_API_KEY_PARAM_NAME;
 const SCAN_IN_PROGRESS = "IN_PROGRESS";
 const SCAN_FAILED_TO_START = "FAILED_TO_START";
+const SNS_SCAN_COMPLETE_TOPIC_ARN = process.env.SNS_SCAN_COMPLETE_TOPIC_ARN;
 const EVENT_S3 = "aws:s3";
 const EVENT_SNS = "aws:sns";
 
@@ -68,9 +70,11 @@ exports.handler = async (event) => {
     // Start a scan of the new S3 object
     if (eventSource === EVENT_S3) {
       const response = await startS3ObjectScan(
-        `${SCAN_FILES_URL}/version`,
+        `${SCAN_FILES_URL}/clamav/s3`,
         config.apiKey,
-        s3Object
+        s3Object,
+        AWS_ACCOUNT_ID,
+        SNS_SCAN_COMPLETE_TOPIC_ARN
       );
       scanStatus = response.status === 200 ? SCAN_IN_PROGRESS : SCAN_FAILED_TO_START;
 
@@ -150,19 +154,32 @@ const getS3ObjectFromRecord = (eventSource, record) => {
  * @param {String} apiEndpoint API endpoint to use for the scan
  * @param {String} apiKey API authorization key to use for the scan
  * @param {{Bucket: string, Key: string}} s3Object S3 object to tag
+ * @param {String} awsAccountId AWS account ID to use for the scan
+ * @param {String} snsArn ARN of the SNS topic to publish scan results to
  * @returns {Response} Axios response from the scan request
  */
-const startS3ObjectScan = async (apiEndpoint, apiKey, s3Object) => {
+const startS3ObjectScan = async (apiEndpoint, apiKey, s3Object, awsAccountId, snsArn) => {
   try {
-    const response = await axios.get(apiEndpoint, {
-      headers: {
-        Accept: "application/json",
-        Authorization: apiKey,
+    const response = await axios.post(
+      apiEndpoint,
+      {
+        aws_account: awsAccountId,
+        s3_key: `s3://${s3Object.Bucket}/${s3Object.Key}`,
+        sns_arn: snsArn,
       },
-    });
+      {
+        headers: {
+          Accept: "application/json",
+          Authorization: apiKey,
+        },
+      }
+    );
+    console.log(`Response: ${JSON.stringify(response)}`);
     return response;
   } catch (error) {
-    console.error(`Failed to start scan for ${s3Object}: ${error.response}`);
+    console.error(
+      `Could not start scan for ${JSON.stringify(s3Object)}: ${JSON.stringify(error.response)}`
+    );
     return error.response;
   }
 };
