@@ -60,7 +60,7 @@ describe("handler", () => {
       body: "Event records processesed: 2, Errors: 0",
     };
 
-    axios.get.mockResolvedValue({ status: 200 });
+    axios.post.mockResolvedValue({ status: 200 });
     mockS3Client.on(PutObjectTaggingCommand).resolves({ VersionId: "yeet" });
 
     const response = await handler(event);
@@ -106,7 +106,7 @@ describe("handler", () => {
       body: "Event records processesed: 1, Errors: 1",
     };
 
-    axios.get.mockResolvedValue({ status: 500 });
+    axios.post.mockResolvedValue({ status: 500 });
     mockS3Client.on(PutObjectTaggingCommand).resolves({ VersionId: "yeet" });
 
     const response = await handler(event);
@@ -137,7 +137,7 @@ describe("handler", () => {
       body: "Event records processesed: 1, Errors: 1",
     };
 
-    axios.get.mockResolvedValue({ status: 200 });
+    axios.post.mockResolvedValue({ status: 200 });
     mockS3Client.on(PutObjectTaggingCommand).resolves({ VersionId: "yeet" });
 
     const response = await handler(event);
@@ -221,14 +221,25 @@ describe("initConfig", () => {
 
 describe("startS3ObjectScan", () => {
   test("starts a scan", async () => {
-    axios.get.mockResolvedValueOnce({ status: 200 });
-    const response = await startS3ObjectScan("http://somedomain.com", "someSuperSecretValue", {
-      Bucket: "foo",
-      Key: "bar",
-    });
-    expect(response).toEqual({ status: 200 });
-    expect(axios.get.mock.calls[0]).toEqual([
+    axios.post.mockResolvedValueOnce({ status: 200 });
+    const response = await startS3ObjectScan(
       "http://somedomain.com",
+      "someSuperSecretValue",
+      {
+        Bucket: "foo",
+        Key: "bar",
+      },
+      "123456789012",
+      "someSnsTopicArn"
+    );
+    expect(response).toEqual({ status: 200 });
+    expect(axios.post.mock.calls[0]).toEqual([
+      "http://somedomain.com",
+      {
+        aws_account: "123456789012",
+        s3_key: "s3://foo/bar",
+        sns_arn: "someSnsTopicArn",
+      },
       {
         headers: {
           Accept: "application/json",
@@ -239,11 +250,17 @@ describe("startS3ObjectScan", () => {
   });
 
   test("fails to start a scan", async () => {
-    axios.get.mockRejectedValueOnce({ response: { status: 500 } });
-    const response = await startS3ObjectScan("http://somedomain.com", "someSuperSecretValue", {
-      Bucket: "foo",
-      Key: "bar",
-    });
+    axios.post.mockRejectedValueOnce({ response: { status: 500 } });
+    const response = await startS3ObjectScan(
+      "http://somedomain.com",
+      "someSuperSecretValue",
+      {
+        Bucket: "foo",
+        Key: "bar",
+      },
+      "123456789012",
+      "someSnsTopicArn"
+    );
     expect(response).toEqual({ status: 500 });
   });
 });

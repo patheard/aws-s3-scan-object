@@ -13,8 +13,10 @@ module "s3_scan_object" {
   reserved_concurrent_executions = 10
 
   environment_variables = {
+    AWS_ACCOUNT_ID                = local.account_id
     SCAN_FILES_URL                = var.scan_files_url
     SCAN_FILES_API_KEY_PARAM_NAME = aws_ssm_parameter.scan_files_api_key.name
+    SNS_SCAN_COMPLETE_TOPIC_ARN   = aws_sns_topic.scan_complete.arn
   }
 
   policies = [
