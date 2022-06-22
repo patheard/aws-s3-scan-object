@@ -158,7 +158,7 @@ describe("handler", () => {
         ],
       },
     });
-  });  
+  });
 
   test("records failed, invalid event source", async () => {
     const event = {
