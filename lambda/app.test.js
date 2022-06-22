@@ -19,6 +19,7 @@ jest.mock("axios");
 global.console = {
   ...console,
   error: jest.fn(),
+  info: jest.fn(),
 };
 
 const TEST_TIME = new Date(1978, 3, 30).getTime();
@@ -123,6 +124,41 @@ describe("handler", () => {
       },
     });
   });
+
+  test("records failed, undefined reponse", async () => {
+    const event = {
+      Records: [
+        {
+          eventSource: "aws:s3",
+          s3: {
+            bucket: { name: "foo" },
+            object: { key: "bar" },
+          },
+        },
+      ],
+    };
+    const expectedResponse = {
+      status: 422,
+      body: "Event records processesed: 1, Errors: 1",
+    };
+
+    axios.post.mockResolvedValue(undefined);
+    mockS3Client.on(PutObjectTaggingCommand).resolves({ VersionId: "yeet" });
+
+    const response = await handler(event);
+    expect(response).toEqual(expectedResponse);
+    expect(mockS3Client).toHaveReceivedNthCommandWith(1, PutObjectTaggingCommand, {
+      Bucket: "foo",
+      Key: "bar",
+      Tagging: {
+        TagSet: [
+          { Key: "av-scanner", Value: "clamav" },
+          { Key: "av-status", Value: "FAILED_TO_START" },
+          { Key: "av-timestamp", Value: TEST_TIME },
+        ],
+      },
+    });
+  });  
 
   test("records failed, invalid event source", async () => {
     const event = {

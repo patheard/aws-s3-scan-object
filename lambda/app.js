@@ -7,6 +7,7 @@
  */
 
 const axios = require("axios");
+const util = require("util");
 const { S3Client, PutObjectTaggingCommand } = require("@aws-sdk/client-s3");
 const { SSMClient, GetParameterCommand } = require("@aws-sdk/client-ssm");
 
@@ -76,7 +77,8 @@ exports.handler = async (event) => {
         AWS_ACCOUNT_ID,
         SNS_SCAN_COMPLETE_TOPIC_ARN
       );
-      scanStatus = response.status === 200 ? SCAN_IN_PROGRESS : SCAN_FAILED_TO_START;
+      scanStatus =
+        response !== undefined && response.status === 200 ? SCAN_IN_PROGRESS : SCAN_FAILED_TO_START;
 
       // Get the scan status for an existing S3 object
     } else if (eventSource === EVENT_SNS) {
@@ -84,7 +86,7 @@ exports.handler = async (event) => {
 
       // Unknown event source
     } else {
-      console.error(`Unsupported event source: ${JSON.stringify(record)}`);
+      console.error(`Unsupported event source: ${util.inspect(record)}`);
     }
 
     // Tag the S3 object if we've got a scan status
@@ -174,11 +176,11 @@ const startS3ObjectScan = async (apiEndpoint, apiKey, s3Object, awsAccountId, sn
         },
       }
     );
-    console.log(`Response: ${JSON.stringify(response)}`);
+    console.info(`Scan response: ${util.inspect(response)}`);
     return response;
   } catch (error) {
     console.error(
-      `Could not start scan for ${JSON.stringify(s3Object)}: ${JSON.stringify(error.response)}`
+      `Could not start scan for ${util.inspect(s3Object)}: ${util.inspect(error.response)}`
     );
     return error.response;
   }
