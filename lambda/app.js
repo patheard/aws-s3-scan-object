@@ -69,24 +69,26 @@ exports.handler = async (event) => {
     let s3Object = getS3ObjectFromRecord(eventSource, record);
 
     // Start a scan of the new S3 object
-    if (eventSource === EVENT_S3) {
-      const response = await startS3ObjectScan(
-        `${SCAN_FILES_URL}/clamav/s3`,
-        config.apiKey,
-        s3Object,
-        AWS_ACCOUNT_ID,
-        SNS_SCAN_COMPLETE_TOPIC_ARN
-      );
-      scanStatus =
-        response !== undefined && response.status === 200 ? SCAN_IN_PROGRESS : SCAN_FAILED_TO_START;
+    if (eventSource !== null && s3Object !== null) {
+      if (eventSource === EVENT_S3) {
+        const response = await startS3ObjectScan(
+          `${SCAN_FILES_URL}/clamav/s3`,
+          config.apiKey,
+          s3Object,
+          AWS_ACCOUNT_ID,
+          SNS_SCAN_COMPLETE_TOPIC_ARN
+        );
+        scanStatus =
+          response !== undefined && response.status === 200
+            ? SCAN_IN_PROGRESS
+            : SCAN_FAILED_TO_START;
 
-      // Get the scan status for an existing S3 object
-    } else if (eventSource === EVENT_SNS) {
-      scanStatus = (record.Sns.MessageAttributes["av-status"].Value + "").toUpperCase();
-
-      // Unknown event source
+        // Get the scan status for an existing S3 object
+      } else if (eventSource === EVENT_SNS) {
+        scanStatus = (record.Sns.MessageAttributes["av-status"].Value + "").toUpperCase();
+      }
     } else {
-      console.error(`Unsupported event source: ${util.inspect(record)}`);
+      console.error(`Unsupported event record: ${util.inspect(record)}`);
     }
 
     // Tag the S3 object if we've got a scan status
@@ -143,7 +145,9 @@ const getS3ObjectFromRecord = (eventSource, record) => {
     };
   } else if (eventSource === EVENT_SNS) {
     const s3ObjectUrl = record.Sns.MessageAttributes["av-filepath"].Value;
-    s3Object = parseS3Url(s3ObjectUrl);
+    if (s3ObjectUrl && s3ObjectUrl.startsWith("s3://")) {
+      s3Object = parseS3Url(s3ObjectUrl);
+    }
   }
 
   return s3Object;

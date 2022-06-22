@@ -236,6 +236,20 @@ describe("getS3ObjectFromRecord", () => {
     };
     expect(getS3ObjectFromRecord("aws:sns", record)).toEqual(expected);
   });
+
+  test("sns event, invalid av-filepath", () => {
+    const record = {
+      Sns: {
+        MessageAttributes: {
+          "av-filepath": {
+            Value: "file:///some.gif",
+          },
+        },
+      },
+    };
+    expect(getS3ObjectFromRecord("aws:sns", record)).toBe(null);
+  });
+
   test("invalid event", () => {
     expect(getS3ObjectFromRecord("muffins", {})).toBe(null);
   });
