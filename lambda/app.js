@@ -16,8 +16,8 @@ const REGION = process.env.REGION;
 const ENDPOINT_URL = process.env.AWS_SAM_LOCAL ? "http://host.docker.internal:3001" : undefined;
 const SCAN_FILES_URL = process.env.SCAN_FILES_URL;
 const SCAN_FILES_API_KEY_PARAM_NAME = process.env.SCAN_FILES_API_KEY_PARAM_NAME;
-const SCAN_IN_PROGRESS = "IN_PROGRESS";
-const SCAN_FAILED_TO_START = "FAILED_TO_START";
+const SCAN_IN_PROGRESS = "in_progress";
+const SCAN_FAILED_TO_START = "failed_to_start";
 const SNS_SCAN_COMPLETE_TOPIC_ARN = process.env.SNS_SCAN_COMPLETE_TOPIC_ARN;
 const EVENT_S3 = "aws:s3";
 const EVENT_SNS = "aws:sns";
@@ -85,7 +85,7 @@ exports.handler = async (event) => {
 
         // Get the scan status for an existing S3 object
       } else if (eventSource === EVENT_SNS) {
-        scanStatus = (record.Sns.MessageAttributes["av-status"].Value + "").toUpperCase();
+        scanStatus = record.Sns.MessageAttributes["av-status"].Value;
       }
     } else {
       console.error(`Unsupported event record: ${util.inspect(record)}`);
