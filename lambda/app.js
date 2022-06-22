@@ -82,7 +82,7 @@ exports.handler = async (event) => {
 
       // Get the scan status for an existing S3 object
     } else if (eventSource === EVENT_SNS) {
-      scanStatus = record.Sns.MessageAttributes.Result.Value;
+      scanStatus = (record.Sns.MessageAttributes["av-status"].Value + "").toUpperCase();
 
       // Unknown event source
     } else {
@@ -142,9 +142,26 @@ const getS3ObjectFromRecord = (eventSource, record) => {
       Key: decodeURIComponent(record.s3.object.key.replace(/\+/g, " ")),
     };
   } else if (eventSource === EVENT_SNS) {
+    const s3ObjectUrl = record.Sns.MessageAttributes["av-filepath"].Value;
+    s3Object = parseS3Url(s3ObjectUrl);
+  }
+
+  return s3Object;
+};
+
+/**
+ * Given an S3 object URL, parses the URL and returns the S3 object's bucket and key.
+ * @param {String} url S3 object URL in format `s3://bucket/key`
+ * @returns {{Bucket: string, Key: string}} S3 object bucket and key or null
+ */
+const parseS3Url = (url) => {
+  let s3Object = null;
+
+  const parsedUrl = url ? url.match(/s3:\/\/([^/]+)\/(.+)/) : null;
+  if (parsedUrl !== null && parsedUrl.length === 3) {
     s3Object = {
-      Bucket: record.Sns.MessageAttributes.Bucket.Value,
-      Key: record.Sns.MessageAttributes.Key.Value,
+      Bucket: parsedUrl[1],
+      Key: parsedUrl[2],
     };
   }
 
@@ -216,6 +233,7 @@ exports.helpers = {
   getRecordEventSource,
   getS3ObjectFromRecord,
   initConfig,
+  parseS3Url,
   startS3ObjectScan,
   tagS3Object,
 };

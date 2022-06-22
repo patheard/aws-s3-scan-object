@@ -12,8 +12,14 @@ mockSSMClient.on(GetParameterCommand).resolves({
 });
 
 const { handler, helpers } = require("./app.js");
-const { getRecordEventSource, getS3ObjectFromRecord, initConfig, startS3ObjectScan, tagS3Object } =
-  helpers;
+const {
+  getRecordEventSource,
+  getS3ObjectFromRecord,
+  initConfig,
+  parseS3Url,
+  startS3ObjectScan,
+  tagS3Object,
+} = helpers;
 
 jest.mock("axios");
 global.console = {
@@ -48,9 +54,8 @@ describe("handler", () => {
           EventSource: "aws:sns",
           Sns: {
             MessageAttributes: {
-              Bucket: { Value: "bam" },
-              Key: { Value: "baz" },
-              Result: { Value: "SPIFY" },
+              "av-filepath": { Value: "s3://bam/baz" },
+              "av-status": { Value: "SPIFY" },
             },
           },
         },
@@ -219,11 +224,8 @@ describe("getS3ObjectFromRecord", () => {
     const record = {
       Sns: {
         MessageAttributes: {
-          Bucket: {
-            Value: "bar",
-          },
-          Key: {
-            Value: "bam",
+          "av-filepath": {
+            Value: "s3://bar/bam",
           },
         },
       },
@@ -252,6 +254,23 @@ describe("initConfig", () => {
   test("throws an error on failure", async () => {
     mockSSMClient.on(GetParameterCommand).rejectsOnce(new Error("nope"));
     await expect(initConfig()).rejects.toThrow("nope");
+  });
+});
+
+describe("parseS3Url", () => {
+  test("successful parse", async () => {
+    expect(parseS3Url("s3://foo/bar")).toEqual({ Bucket: "foo", Key: "bar" });
+    expect(parseS3Url("s3://the-spice-must-flow/bar/bam/baz/bing.png")).toEqual({
+      Bucket: "the-spice-must-flow",
+      Key: "bar/bam/baz/bing.png",
+    });
+  });
+
+  test("unsuccessful parse", async () => {
+    expect(parseS3Url(undefined)).toBe(null);
+    expect(parseS3Url(null)).toBe(null);
+    expect(parseS3Url("")).toBe(null);
+    expect(parseS3Url("s3://foo")).toBe(null);
   });
 });
 
