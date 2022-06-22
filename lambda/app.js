@@ -197,7 +197,7 @@ const startS3ObjectScan = async (apiEndpoint, apiKey, s3Object, awsAccountId, sn
         },
       }
     );
-    console.info(`Scan response: ${util.inspect(response)}`);
+    console.info(`Scan response ${response.status}: ${util.inspect(response.data)}`);
     return response;
   } catch (error) {
     console.error(
