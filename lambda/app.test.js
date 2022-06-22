@@ -12,13 +12,20 @@ mockSSMClient.on(GetParameterCommand).resolves({
 });
 
 const { handler, helpers } = require("./app.js");
-const { getRecordEventSource, getS3ObjectFromRecord, initConfig, startS3ObjectScan, tagS3Object } =
-  helpers;
+const {
+  getRecordEventSource,
+  getS3ObjectFromRecord,
+  initConfig,
+  parseS3Url,
+  startS3ObjectScan,
+  tagS3Object,
+} = helpers;
 
 jest.mock("axios");
 global.console = {
   ...console,
   error: jest.fn(),
+  info: jest.fn(),
 };
 
 const TEST_TIME = new Date(1978, 3, 30).getTime();
@@ -47,9 +54,8 @@ describe("handler", () => {
           EventSource: "aws:sns",
           Sns: {
             MessageAttributes: {
-              Bucket: { Value: "bam" },
-              Key: { Value: "baz" },
-              Result: { Value: "SPIFY" },
+              "av-filepath": { Value: "s3://bam/baz" },
+              "av-status": { Value: "SPIFY" },
             },
           },
         },
@@ -107,6 +113,41 @@ describe("handler", () => {
     };
 
     axios.post.mockResolvedValue({ status: 500 });
+    mockS3Client.on(PutObjectTaggingCommand).resolves({ VersionId: "yeet" });
+
+    const response = await handler(event);
+    expect(response).toEqual(expectedResponse);
+    expect(mockS3Client).toHaveReceivedNthCommandWith(1, PutObjectTaggingCommand, {
+      Bucket: "foo",
+      Key: "bar",
+      Tagging: {
+        TagSet: [
+          { Key: "av-scanner", Value: "clamav" },
+          { Key: "av-status", Value: "FAILED_TO_START" },
+          { Key: "av-timestamp", Value: TEST_TIME },
+        ],
+      },
+    });
+  });
+
+  test("records failed, undefined reponse", async () => {
+    const event = {
+      Records: [
+        {
+          eventSource: "aws:s3",
+          s3: {
+            bucket: { name: "foo" },
+            object: { key: "bar" },
+          },
+        },
+      ],
+    };
+    const expectedResponse = {
+      status: 422,
+      body: "Event records processesed: 1, Errors: 1",
+    };
+
+    axios.post.mockResolvedValue(undefined);
     mockS3Client.on(PutObjectTaggingCommand).resolves({ VersionId: "yeet" });
 
     const response = await handler(event);
@@ -183,11 +224,8 @@ describe("getS3ObjectFromRecord", () => {
     const record = {
       Sns: {
         MessageAttributes: {
-          Bucket: {
-            Value: "bar",
-          },
-          Key: {
-            Value: "bam",
+          "av-filepath": {
+            Value: "s3://bar/bam",
           },
         },
       },
@@ -198,6 +236,20 @@ describe("getS3ObjectFromRecord", () => {
     };
     expect(getS3ObjectFromRecord("aws:sns", record)).toEqual(expected);
   });
+
+  test("sns event, invalid av-filepath", () => {
+    const record = {
+      Sns: {
+        MessageAttributes: {
+          "av-filepath": {
+            Value: "file:///some.gif",
+          },
+        },
+      },
+    };
+    expect(getS3ObjectFromRecord("aws:sns", record)).toBe(null);
+  });
+
   test("invalid event", () => {
     expect(getS3ObjectFromRecord("muffins", {})).toBe(null);
   });
@@ -216,6 +268,23 @@ describe("initConfig", () => {
   test("throws an error on failure", async () => {
     mockSSMClient.on(GetParameterCommand).rejectsOnce(new Error("nope"));
     await expect(initConfig()).rejects.toThrow("nope");
+  });
+});
+
+describe("parseS3Url", () => {
+  test("successful parse", async () => {
+    expect(parseS3Url("s3://foo/bar")).toEqual({ Bucket: "foo", Key: "bar" });
+    expect(parseS3Url("s3://the-spice-must-flow/bar/bam/baz/bing.png")).toEqual({
+      Bucket: "the-spice-must-flow",
+      Key: "bar/bam/baz/bing.png",
+    });
+  });
+
+  test("unsuccessful parse", async () => {
+    expect(parseS3Url(undefined)).toBe(null);
+    expect(parseS3Url(null)).toBe(null);
+    expect(parseS3Url("")).toBe(null);
+    expect(parseS3Url("s3://foo")).toBe(null);
   });
 });
 

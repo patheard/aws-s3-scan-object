@@ -16,17 +16,13 @@ If you want to test how the function handles an SNS message, you can publish a m
 ```sh
 cat > payload.json <<EOL 
 {
-    "Bucket": {
+    "av-filepath": {
         "DataType": "String",
-        "StringValue": "Samwise"
+        "StringValue": "s3://bucket-name/object-name.png"
     },
-    "Key": {
+    "av-status": {
         "DataType": "String",
-        "StringValue": "Gamgee"
-    },
-    "Result": {
-        "DataType": "String",
-        "StringValue": "POTAYTOES"
+        "StringValue": "clean"
     }
 }
 EOL

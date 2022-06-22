@@ -7,6 +7,7 @@
  */
 
 const axios = require("axios");
+const util = require("util");
 const { S3Client, PutObjectTaggingCommand } = require("@aws-sdk/client-s3");
 const { SSMClient, GetParameterCommand } = require("@aws-sdk/client-ssm");
 
@@ -68,23 +69,26 @@ exports.handler = async (event) => {
     let s3Object = getS3ObjectFromRecord(eventSource, record);
 
     // Start a scan of the new S3 object
-    if (eventSource === EVENT_S3) {
-      const response = await startS3ObjectScan(
-        `${SCAN_FILES_URL}/clamav/s3`,
-        config.apiKey,
-        s3Object,
-        AWS_ACCOUNT_ID,
-        SNS_SCAN_COMPLETE_TOPIC_ARN
-      );
-      scanStatus = response.status === 200 ? SCAN_IN_PROGRESS : SCAN_FAILED_TO_START;
+    if (eventSource !== null && s3Object !== null) {
+      if (eventSource === EVENT_S3) {
+        const response = await startS3ObjectScan(
+          `${SCAN_FILES_URL}/clamav/s3`,
+          config.apiKey,
+          s3Object,
+          AWS_ACCOUNT_ID,
+          SNS_SCAN_COMPLETE_TOPIC_ARN
+        );
+        scanStatus =
+          response !== undefined && response.status === 200
+            ? SCAN_IN_PROGRESS
+            : SCAN_FAILED_TO_START;
 
-      // Get the scan status for an existing S3 object
-    } else if (eventSource === EVENT_SNS) {
-      scanStatus = record.Sns.MessageAttributes.Result.Value;
-
-      // Unknown event source
+        // Get the scan status for an existing S3 object
+      } else if (eventSource === EVENT_SNS) {
+        scanStatus = (record.Sns.MessageAttributes["av-status"].Value + "").toUpperCase();
+      }
     } else {
-      console.error(`Unsupported event source: ${JSON.stringify(record)}`);
+      console.error(`Unsupported event record: ${util.inspect(record)}`);
     }
 
     // Tag the S3 object if we've got a scan status
@@ -140,9 +144,28 @@ const getS3ObjectFromRecord = (eventSource, record) => {
       Key: decodeURIComponent(record.s3.object.key.replace(/\+/g, " ")),
     };
   } else if (eventSource === EVENT_SNS) {
+    const s3ObjectUrl = record.Sns.MessageAttributes["av-filepath"].Value;
+    if (s3ObjectUrl && s3ObjectUrl.startsWith("s3://")) {
+      s3Object = parseS3Url(s3ObjectUrl);
+    }
+  }
+
+  return s3Object;
+};
+
+/**
+ * Given an S3 object URL, parses the URL and returns the S3 object's bucket and key.
+ * @param {String} url S3 object URL in format `s3://bucket/key`
+ * @returns {{Bucket: string, Key: string}} S3 object bucket and key or null
+ */
+const parseS3Url = (url) => {
+  let s3Object = null;
+
+  const parsedUrl = url ? url.match(/s3:\/\/([^/]+)\/(.+)/) : null;
+  if (parsedUrl !== null && parsedUrl.length === 3) {
     s3Object = {
-      Bucket: record.Sns.MessageAttributes.Bucket.Value,
-      Key: record.Sns.MessageAttributes.Key.Value,
+      Bucket: parsedUrl[1],
+      Key: parsedUrl[2],
     };
   }
 
@@ -174,11 +197,11 @@ const startS3ObjectScan = async (apiEndpoint, apiKey, s3Object, awsAccountId, sn
         },
       }
     );
-    console.log(`Response: ${JSON.stringify(response)}`);
+    console.info(`Scan response: ${util.inspect(response)}`);
     return response;
   } catch (error) {
     console.error(
-      `Could not start scan for ${JSON.stringify(s3Object)}: ${JSON.stringify(error.response)}`
+      `Could not start scan for ${util.inspect(s3Object)}: ${util.inspect(error.response)}`
     );
     return error.response;
   }
@@ -214,6 +237,7 @@ exports.helpers = {
   getRecordEventSource,
   getS3ObjectFromRecord,
   initConfig,
+  parseS3Url,
   startS3ObjectScan,
   tagS3Object,
 };
