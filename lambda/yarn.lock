@@ -1804,7 +1804,7 @@ asynckit@^0.4.0:
   resolved "https://registry.npmjs.org/asynckit/-/asynckit-0.4.0.tgz"
   integrity sha512-Oei9OH4tRh0YqU3GxhX79dM/mwVgvbZJaSNaRk+bshkj0S5cfHcgYakreBjrHwatXKbz+IoIdYLxrKim2MjW0Q==
 
-aws-sdk-client-mock-jest@^2.0.0:
+aws-sdk-client-mock-jest@2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/aws-sdk-client-mock-jest/-/aws-sdk-client-mock-jest-2.0.0.tgz#d175615167684fb639d31f5e237d5d0d8bae3f9f"
   integrity sha512-HwJeJThngXDUyyyd3Hk12Ailu3smhQzyox+nrF14TxE/LNSJsSmJ2rXahzj7Zdyxn9jDSe2h2ulrfUNYgbPYlw==
